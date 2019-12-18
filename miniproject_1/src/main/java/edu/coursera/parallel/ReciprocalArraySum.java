@@ -130,7 +130,7 @@ public final class ReciprocalArraySum {
 
         @Override
         protected void compute() {
-            if (this.endIndexExclusive - this.startIndexInclusive < 1000) {
+            if (this.endIndexExclusive - this.startIndexInclusive < 10000) {
                 for (int i = this.startIndexInclusive; i < this.endIndexExclusive; i++) {
                     value += 1 / this.input[i];
                 }
@@ -142,9 +142,7 @@ public final class ReciprocalArraySum {
                         (this.endIndexExclusive + this.startIndexInclusive) / 2,
                         this.endIndexExclusive,
                         this.input);
-                left.fork();
-                right.compute();
-                left.join();
+                ForkJoinTask.invokeAll(left, right);
                 value = left.getValue() + right.getValue();
             }
         }
@@ -160,10 +158,11 @@ public final class ReciprocalArraySum {
      * @return The sum of the reciprocals of the array input
      */
     protected static double parArraySum(final double[] input) {
-//        System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", "2");
         assert input.length % 2 == 0;
+
         ReciprocalArraySumTask t = new ReciprocalArraySumTask(0, input.length, input);
         ForkJoinPool.commonPool().invoke(t);
+
         return t.getValue();
     }
 
@@ -179,8 +178,6 @@ public final class ReciprocalArraySum {
      */
     protected static double parManyTaskArraySum(final double[] input,
                                                 final int numTasks) {
-//        System.setProperty("java.util.concurrent.ForkJoinPool.common.parallelism", Integer.toString(numTasks));
-
         assert input.length % 2 == 0;
         double res = 0;
 
@@ -191,6 +188,7 @@ public final class ReciprocalArraySum {
                     getChunkEndExclusive(i, numTasks, input.length), input);
             tasks.add(t);
         }
+
         ForkJoinTask.invokeAll(tasks);
 
         for (ReciprocalArraySumTask task : tasks) {
